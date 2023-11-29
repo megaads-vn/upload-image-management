@@ -1,5 +1,10 @@
 {
-    "name": "megaads/management-image-upload",
+    "name": "megaads/upload-image-management",
+    "autoload": {
+        "psr-4": {
+            "Megaads\\UploadImageManagement\\": "src/"
+        }
+    },
     "authors": [
         {
             "name": "Manh NV",
