@@ -1,0 +1,11 @@
+{
+    "name": "megaads/management-image-upload",
+    "authors": [
+        {
+            "name": "Manh NV",
+            "email": "manhnv4997@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}
