@@ -7,35 +7,153 @@ class ManagementService {
     protected $maxWidth;
     protected $maxSize;
     protected $compressionQuality;
+    protected $googleCloudStorageService;
+    protected $config;
 
-    public function __construct(array $options) {
-        if (gettype($options['max_height']) == 'integer' && $options['max_height'] < \Config::get('config.max_height', 2000)) {
-            $this->maxHeight = $options['max_height'];
+    public function __construct(array $data) {
+        if (gettype($data['options']['max_height']) == 'integer' && $data['options']['max_height'] < \Config::get('config.max_height', 2000)) {
+            $this->maxHeight = $data['options']['max_height'];
 
         } else {
             $this->maxHeight = \Config::get('config.max_height', 2000);
         }
 
-        if (gettype($options['max_width']) == 'integer' && $options['max_width'] < \Config::get('config.max_width', 2000)) {
-            $this->maxWidth = $options['max_width'];
+        if (gettype($data['options']['max_width']) == 'integer' && $data['options']['max_width'] < \Config::get('config.max_width', 2000)) {
+            $this->maxWidth = $data['options']['max_width'];
 
         } else {
             $this->maxWidth = \Config::get('config.max_width', 2000);
         }
 
-        // if (gettype($options['max_size']) == 'integer' && $options['max_size'] < \Config::get('config.max_size', 10400)) {
-        //     $this->maxSize = $options['max_size'];
+        // if (gettype($data['options']['max_size']) == 'integer' && $data['options']['max_size'] < \Config::get('config.max_size', 10400)) {
+        //     $this->maxSize = $data['options']['max_size'];
 
         // } else {
         //     $this->maxSize = \Config::get('config.max_size', 10400);
         // }
 
-        if (gettype($options['compress_quality']) == 'integer' && $options['compress_quality'] < \Config::get('config.compression_ratio', 50)) {
-            $this->compressionQuality = $options['compress_quality'];
+        if (gettype($data['options']['compress_quality']) == 'integer' && $data['options']['compress_quality'] < \Config::get('config.compression_ratio', 50)) {
+            $this->compressionQuality = $data['options']['compress_quality'];
 
         } else {
             $this->compressionQuality = \Config::get('config.compression_ratio', 50);
         }
+
+        $this->googleCloudStorageService = new GoogleCloudStorageService($data['config']['gg_cloud_format_url'], $data['config']['key_path']);
+    }
+
+    // public function upload ($bucketName = 'printerval-central' , Request $request) {
+    //     $retval = [
+    //         'status' => 'fail',
+    //         'errors' => ['Unknown error']
+    //     ];
+
+    //     if ($request->file('upload') && is_array($request->file('upload'))) {
+    //         $uploads = [];
+    //         $retval['errors'] = [];
+    //         foreach ($request->file('upload') as $fileName) {
+    //             if ($request->get('type') != 'design' && $request->get('type') != 'customize') {
+    //                 $message = $this->isAValidFile($fileName, $request->get('type'));
+    //                 if ($message) {
+    //                     $retval['errors'][] = $message;
+    //                     continue;
+    //                 }
+    //             }
+    //             if ($request->input('type') == 'customize') {
+    //                 $publicUrl = $this->uploadSingleImageCustomFolder('customize', $bucketName, $fileName);
+    //             } else {
+    //                 $publicUrl = $this->uploadSingleImage($bucketName, $fileName);
+    //             }
+    //             if ($publicUrl) {
+    //                 $uploads[] = $publicUrl;
+    //             }
+    //         }
+
+    //         $retval['status'] = count($uploads) > 0 ? 'successful' : 'fail';
+    //         $retval['upload'] = $uploads;
+    //     } else if ($request->file('upload')) {
+    //         if ($request->get('type') != 'design' && $request->get('type') != 'customize') {
+    //             $message = $this->isAValidFile($request->file('upload'), $request->get('type'));
+    //             if ($message) {
+    //                 return [
+    //                     'status' => 'fail',
+    //                     'errors' => [$message]
+    //                 ];
+    //             }
+    //         }
+    //         $fileName = $request->file('upload');
+    //         $resultCompress = $this->managementService->compressImage();
+
+    //         if ($resultCompress['status'] == 'successful') {
+    //             $imagePath = $resultCompress['compression_file_path'];
+    //             $fileName = $this->createUpLoadFile($imagePath, $fileName->getClientOriginalName(), $fileName->getMimeType());
+                
+    //             if ($request->input('type') == 'customize') {
+    //                 $publicUrl = $this->uploadSingleImageCustomFolder('customize', $bucketName, $fileName);
+    //             } else {
+    //                 $publicUrl = $this->uploadSingleImage($bucketName, $fileName);
+    //             }
+
+    //             $aa = $this->googleCloudStorageService->createLogUploadImage($publicUrl);
+    //             Log::error(['info' => $aa]);
+    //             $uploads[] = $publicUrl;
+    //             $retval = [
+    //                 'status' => 'successful',
+    //                 'upload' => $uploads
+    //             ];
+    //         } else {
+    //             $retval = [
+    //                 'status' => 'failed',
+    //                 'result' => [
+    //                     'message' => 'Compress image failed'
+    //                 ]
+    //             ];
+    //         }
+    //         $this->managementService->getDetailLog(Carbon::now()->toDateString());
+    //         $this->managementService->removeUrlUsedInLog($publicUrl, '2023-12-09');
+    //     } else {
+    //         $retval['errors'] = ["No file found"];
+    //     }
+
+    //     return $retval;
+    // }
+
+    public function uploadFile($fileUpload, $bucketName) {
+        $resultCompress = $this->compressImage();
+
+        if ($resultCompress['status'] == 'successful') {
+            $imagePath = $resultCompress['compression_file_path'];
+            // $fileUpload = $this->createUpLoadFile($imagePath, $fileUpload->getClientOriginalName(), $fileUpload->getMimeType());
+            
+            // if ($request->input('type') == 'customize') {
+            //     $publicUrl = $this->uploadSingleImageCustomFolder('customize', $bucketName, $fileUpload);
+            // } else {
+                $publicUrl = $this->googleCloudStorageService->uploadSingleImage($bucketName, $fileUpload);
+            // }
+
+            $aa = $this->createLogUploadImage($publicUrl);
+            $uploads[] = $publicUrl;
+            $retval = [
+                'status' => 'successful',
+                'upload' => $uploads
+            ];
+        } else {
+            $retval = [
+                'status' => 'failed',
+                'result' => [
+                    'message' => 'Compress image failed'
+                ]
+            ];
+        }
+        $this->getDetailLog(date('Y-m-d'));
+        $this->removeUrlUsedInLog($publicUrl, '2023-12-09');
+
+        return $retval;
+    }
+
+    public function uploadFiles()
+    {
+
     }
 
     public function compressImage(string $targetDir = 'uploads'): array
@@ -155,7 +273,6 @@ class ManagementService {
 
     public function createLogUploadImage(string $url): array
     {
-        // $targetDir = 'logs/';
         $targetDir = __DIR__ . '/../Logs';
         
         $error = $this->createFolder($targetDir);
@@ -218,7 +335,6 @@ class ManagementService {
                 ]
             ];
         }
-        
 
         return $retVal;
     }
